@@ -42,6 +42,9 @@ export class User {
   otp: number;
 
   @Column({ nullable: true })
+  profilePicture: string;
+
+  @Column({ nullable: true })
   otpValidTill: Date;
 
   @CreateDateColumn()

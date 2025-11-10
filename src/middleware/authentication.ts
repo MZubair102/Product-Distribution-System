@@ -3,13 +3,18 @@ import { Request, Response, NextFunction } from "express";
 import {Encrypt} from "../helpers/encrypt.helper";
 
 export const authentication = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ message: "Access denied" })
-    }
-    const token = authHeader && authHeader.split(" ")[1];
+
+    //  When use token in Header
+    // const authHeader = req.headers.authorization;
+    // if (!authHeader) {
+    //     return res.status(401).json({ message: "Access denied" })
+    // }
+    // const token = authHeader && authHeader.split(" ")[1];
+
+     //when token in cookies
+     const token = req.cookies.token;
     if (!token) {
-        return res.status(401).json({ message: "Access denied" })
+        return res.status(401).json({ message: "Access denied!" })
     }
     const decoded = Encrypt.verifyToken(token);
     if (!decoded) {

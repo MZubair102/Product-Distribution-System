@@ -13,7 +13,8 @@ export class retailerController {
 
       const payload={
         ...req.body,
-        user
+        userId: userdata.id,
+        email: user.email,
       }
 
       const retailer = retailerRepository.creteRetailer(payload);

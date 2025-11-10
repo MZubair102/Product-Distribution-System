@@ -1,4 +1,4 @@
-import { IsDate, IsDefined, IsEmail, IsEmpty, IsNotEmpty, IsNumber, IsString, IsStrongPassword, MaxLength, MinLength } from 'class-validator';
+import { IsDate, IsDefined, IsEmail, IsEmpty, IsNotEmpty, IsNumber, IsNumberString, IsString, IsStrongPassword, MaxLength, MinLength } from 'class-validator';
 
 export class resetPasswordDto {
 
@@ -7,9 +7,8 @@ export class resetPasswordDto {
    email: string; 
 
   @IsDefined({ message: "OTP must be provided" })
-  @IsNumber()
-  otp:number
-
+  @IsNumberString()
+  otp:string;
 
   @IsDefined({ message: "Password is required" })
   @MinLength(5)

@@ -13,9 +13,9 @@ const router=express.Router();
   router.post("/verifyotp",authController.verifyOtp)
   router.post("/resendotp",authController.resendOtp)
   router.post("/forgotpassword",authController.forgotPassword)
-  router.post("/resetpassword",validator(resetPasswordDto),authController.resetPassword)
+  router.post("/resetpassword",authController.resetPassword)
   router.get("/profile",authentication,authorization([userRoles.ADMIN,userRoles.USER]),authController.userProfile)
-
+  router.post("/logout",authController.logoutUser)
   router.post("/createretailer",authentication,retailerController.createRetailer)
   
 

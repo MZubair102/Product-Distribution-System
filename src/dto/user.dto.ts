@@ -18,7 +18,7 @@ export class userDto{
     // otp:number
 
     @IsDefined({message:"Password is required"})
-    @MinLength(5)
+    @MinLength(6)
     @MaxLength(20)
     @IsStrongPassword({
         minUppercase:1,

@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
 import handleresponse from "../utils/utils";
 import { adminRepository, userRepository } from "../repository/user.Repository";
-import {UserResponseDto} from "../dto/userresponse.dto";
-import {Encrypt} from "../helpers/encrypt.helper";
+import { UserResponseDto } from "../dto/userresponse.dto";
+import { Encrypt } from "../helpers/encrypt.helper";
 import { sendMail } from "../helpers/nodemailer.helper";
 import { userRoles } from "../enum/userroles.enum";
 import { Admin } from "../entity/Admin";
+import * as dotenv from "dotenv";
+
+
+dotenv.config();
 
 export class authController {
-
   static async forgotPassword(req: Request, res: Response) {
     // console.log("testing: "+req.body.email);
     const { email } = req.body;
@@ -22,26 +25,29 @@ export class authController {
       const otp = await authController.generateOtp();
       console.log("Generated OTP:", otp);
       const otpValidTill = await authController.generateOtpValidTill();
-      const updateuser = await userRepository.updateUser(
-        user.id,
-        {
-          otp,
-          otpValidTill,
-        });
-      sendMail({
-        to: user.email,
-        subject: "Forgot PasswordOTP Code",
-        text: `Your forgot password OTP Code is: ${otp}
-      \nIt is valid for 5 minutes.${otpValidTill}`
+      const updateuser = await userRepository.updateUser(user.id, {
+        otp,
+        otpValidTill,
       });
-      handleresponse(res, 200, "Forgot Password Email Send Successfully", updateuser);
+      // sendMail({
+      //   to: user.email,
+      //   subject: "Forgot PasswordOTP Code",
+      //   text: `Your forgot password OTP Code is: ${otp}
+      // \nIt is valid for 5 minutes.${otpValidTill}`
+      // });
+      handleresponse(
+        res,
+        200,
+        "Forgot Password Email Send Successfully!",
+        updateuser
+      );
     } else {
       handleresponse(res, 404, "User Not Found");
     }
   }
 
-  static resetPassword=async(req: Request, res: Response)=> {
-    const { email} = req.body;
+  static resetPassword = async (req: Request, res: Response) => {
+    const { email } = req.body;
     const user = await userRepository.findByEmail(email);
 
     // if(user?.otp!===Number(req.body.otp)&&new Date(){}
@@ -53,25 +59,26 @@ export class authController {
       if (new Date() > new Date(user.otpValidTill)) {
         handleresponse(res, 400, "OTP Expired");
       }
-      if( user.otp == Number(req.body.otp) && new Date()<=new Date(user.otpValidTill)){
-      const updateUser = await userRepository.updateUser(
-        user.id,
-        {
+      if (
+        user.otp == Number(req.body.otp) &&
+        new Date() <= new Date(user.otpValidTill)
+      ) {
+        const updateUser = await userRepository.updateUser(user.id, {
           // otp: 0,
           // otpValidTill: new Date(0),
-          password: await Encrypt.hashPassword(req.body.password)
+          password: await Encrypt.hashPassword(req.body.password),
         });
-      // sendMail({
-      //   to: user.email,
-      //   subject: "Password Reset Successfully",
-      //   text: `Your Password Reset Done.`
-      // });
-      handleresponse(res, 200, "Password Reset Successfully", updateUser);
+        // sendMail({
+        //   to: user.email,
+        //   subject: "Password Reset Successfully",
+        //   text: `Your Password Reset Done.`
+        // });
+        handleresponse(res, 200, "Password Reset Successfully!", updateUser);
       }
     } else {
       handleresponse(res, 404, "User Not Found");
     }
-  }
+  };
 
   static async createUser(req: Request, res: Response) {
     // console.log("testing: "+req.body.email);
@@ -89,17 +96,17 @@ export class authController {
       ...req.body,
       otp,
       otpValidTill,
-    }
+    };
     const user = await userRepository.creteUser(payload);
     // user.otp = otp;
     // user.otpValidTill = otpValidTill;
     // await userRepository.saveUser(user);
-    if(user.role===userRoles.ADMIN){
-      const newAdmin=new Admin();
-      newAdmin.user=user;
-      newAdmin.mobile=req.body.mobile;
-      newAdmin.department=req.body.department;
-      newAdmin.designation=req.body.designation;
+    if (user.role === userRoles.ADMIN) {
+      const newAdmin = new Admin();
+      newAdmin.user = user;
+      newAdmin.mobile = req.body.mobile;
+      newAdmin.department = req.body.department;
+      newAdmin.designation = req.body.designation;
       await adminRepository.createadmin(newAdmin);
     }
     // sendMail({
@@ -108,36 +115,51 @@ export class authController {
     //   text: `welcome to our app. Your OTP is: ${otp}\nIt is valid for 5 minutes : ${otpValidTill}`
     // });
     // handleresponse(res, 201, "User Creted", user);
-    handleresponse(res, 201, "User Created Successfully",{user:new UserResponseDto(user)} )
+    handleresponse(
+      res,
+      201,
+      "User Created Successfully! Please verify your OTP.",
+      {
+        user: new UserResponseDto(user),
+      }
+    );
   }
 
   static async verifyOtp(req: Request, res: Response) {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      handleresponse(res, 400, "Email and OTP are required");
+      return handleresponse(res, 400, "Email and OTP are required");
     }
     const user = await userRepository.findByEmail(email);
     if (user) {
       if (user.isVerified) {
-        handleresponse(res, 400, "User Already Verified", user);
+        return handleresponse(res, 400, "User Already Verified", user);
       }
       if (user.otp !== Number(otp)) {
-        handleresponse(res, 400, "Invalid OTP", null);
+        return handleresponse(res, 400, "Invalid OTP", null);
       }
       if (new Date() > new Date(user.otpValidTill)) {
-        handleresponse(res, 400, "OTP Expired", null);
+        return handleresponse(res, 400, "OTP Expired", null);
       }
-      if (user.otp == Number(otp)&&new Date()<=new Date(user.otpValidTill)) {
-      const updateuser = await userRepository.updateUser(user.id, {
-        isVerified: true,
-    });
-      handleresponse(res, 200, "Otp Verified Successfully", updateuser)
-    }else{
-      handleresponse(res, 400, "OTP Verification Failed");
+      if (
+        user.otp == Number(otp) &&
+        new Date() <= new Date(user.otpValidTill)
+      ) {
+        const updateuser = await userRepository.updateUser(user.id, {
+          isVerified: true,
+        });
+        return handleresponse(
+          res,
+          200,
+          "Otp Verified Successfully",
+          updateuser
+        );
+      } else {
+        handleresponse(res, 400, "OTP Verification Failed");
+      }
+    } else {
+      return handleresponse(res, 404, "User Not Found", null);
     }
-  } else {
-    handleresponse(res, 404, "User Not Found", null);
-  }
   }
 
   static async resendOtp(req: Request, res: Response) {
@@ -158,17 +180,17 @@ export class authController {
       // user.otp = otp;
       // user.otpValidTill = otpValidTill;
       // await userRepository.saveUser(user);
-      const updateusr=await userRepository.updateUser(user.id,{
+      const updateusr = await userRepository.updateUser(user.id, {
         otp,
-        otpValidTill,});
-        
-      // Send OTP email
-      await sendMail({
-        to: user.email,
-        subject: "Your New OTP Code",
-        text: `Your new OTP code is: ${user.otp}\nIt is valid for 5 minutes : ${user.otpValidTill}`,
+        otpValidTill,
       });
-      handleresponse(res, 200, "OTP resent successfully", updateusr);
+      // Send OTP email
+      // await sendMail({
+      //   to: user.email,
+      //   subject: "Your New OTP Code",
+      //   text: `Your new OTP code is: ${otp}\nIt is valid for 5 minutes : ${otpValidTill}`,
+      // });
+      handleresponse(res, 200, "New OTP resent successfully!", updateusr);
     } else {
       handleresponse(res, 404, "User Not Found", null);
     }
@@ -178,27 +200,85 @@ export class authController {
     const { email, password } = req.body;
     const user = await userRepository.findByEmail(email);
     if (user) {
-      if (!user || !(await Encrypt.comparePassword(password, user.password))) {
-        handleresponse(res, 401, "Invalid email or password");
+      // if (!user || !(await Encrypt.comparePassword(password, user.password))) {
+      //   handleresponse(res, 401, "Invalid email or password");
+      // }
+
+      if (!user) {
+        return handleresponse(res, 404, "User not found");
+      }
+
+      const isPasswordValid = await Encrypt.comparePassword(
+        password,
+        user.password
+      );
+      if (!isPasswordValid) {
+        return handleresponse(res, 401, "Invalid password");
       }
       if (!user.isVerified) {
-        handleresponse(res, 403, "Please verify your email before logging in");
+        return handleresponse(
+          res,
+          403,
+          "Please verify your email before logging in"
+        );
       }
       const payload = { id: user.id };
       const token = await Encrypt.generateToken(payload);
       const refreshToken = await Encrypt.generateRefreshToken(payload);
-      handleresponse(res, 200, "Login Successfully", { user, token, refreshToken })
+
+      res.cookie("token", token, {
+        httpOnly: true, // JS cannot access the cookie (security)
+        secure: false, // false for localhost; true in production (HTTPS)
+        sameSite: "lax", // allow cookies across different domains
+        maxAge: 1 * 60 * 1000,
+        // maxAge: 24 * 60 * 60 * 1000, // 1 day
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        // path: "/", // important for clearing cookie globally
+      });
+      return handleresponse(res, 200, "Login Successfully!", {
+        user,
+        token,
+        refreshToken,
+      });
     } else {
-      handleresponse(res, 404, "User Not Found");
+      return handleresponse(res, 404, "User Not Found");
+    }
+  }
+
+  static async logoutUser(req: Request, res: Response) {
+    try {
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: false, // must match what you set when creating it
+        sameSite: "lax", // must match
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        //  path: "/", // ensure you clear the cookie globally
+      });
+      return handleresponse(res, 200, "Logged out successfully!");
+    } catch (error: any) {
+      return handleresponse(res, 500, "Error while logging out", error.message);
     }
   }
 
   static async userProfile(req: Request, res: Response) {
+    // const user = req.headers["user"] as any;
     const userdata = (req as any).user;
     const profile = await userRepository.findById(userdata.id);
-    if (profile){
+    if (profile) {
       handleresponse(res, 200, "User profile fetched successfully", profile);
-    }else{
+    } else {
+      handleresponse(res, 404, "User not found");
+    }
+  }
+  static async updateProfile(req: Request, res: Response) {
+    // const user = req.headers["user"] as any;
+    const userdata = (req as any).user;
+    const profile = await userRepository.findById(userdata.id);
+    if (profile) {
+      handleresponse(res, 200, "User profile fetched successfully", profile);
+    } else {
       handleresponse(res, 404, "User not found");
     }
   }
@@ -225,6 +305,6 @@ export class authController {
   }
 
   static async generateOtpValidTill(): Promise<Date> {
-    return new Date(Date.now() + 5 * 60 * 1000); // valid for 5 minutes
+    return new Date(Date.now() + 5 * 60 * 1000);// valid for 5 minutes
   }
 }
