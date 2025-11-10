@@ -1,12 +1,12 @@
 import "reflect-metadata";
-import * as express from "express";
-import  * as cors from "cors";
-import * as path from "path";
+import express from "express";
+import  cors from "cors";
+import path from "path";
 import { datasource } from "./config/data-source";
 import errorHandler from "./middleware/errorHandler";
 import { userRouter } from "./routes/user.routes";
 import { authRouter } from "./routes/auth.routes";
-import * as cookieParser from "cookie-parser"
+import cookieParser from "cookie-parser"
 
 const app = express();
 app.use(cookieParser())

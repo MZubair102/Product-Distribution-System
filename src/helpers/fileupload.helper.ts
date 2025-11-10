@@ -1,6 +1,6 @@
-import * as multer from "multer";
-import * as path from "path";
-import * as fs from "fs";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 
 
